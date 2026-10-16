@@ -1,0 +1,53 @@
+# 台股盤中監看(雲端版):本機平日關機,所以在 GitHub Actions 跑。
+# 設計:cron 只負責「啟動」一個跑到 13:35 的長工作,精準度靠腳本內 30 秒輪詢。
+# 排程延遲:整點是全平台尖峰(lol-betting-model 實測 08-03 延遲 34 分、下一班沒觸發),所以用 :37 觸發、留 20 分鐘餘裕。
+# 額度:公開 repo 不計分鐘;私人 repo 每月 2000 分,這支一天約 285 分,放私人會爆。
+# 名單:watch_auto.json 由本機每晚 21:40 push_watch.bat 產生並 push。
+name: intraday-watch
+on:
+  schedule:
+    - cron: "37 0 * * 1-5"        # UTC 00:37 = 台北 08:37,週一到週五(台灣休市日會空跑,名單空就直接結束)
+  workflow_dispatch:
+    inputs:
+      once:
+        description: "only one poll, no Discord (smoke test)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write                 # 收盤後把 intraday_log.jsonl commit 回來
+
+concurrency:
+  group: intraday-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      TZ: Asia/Taipei
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: smoke (one poll, dry run)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.once }}
+        run: python cloud/intraday_watch.py --extra watch_auto.json --once --dry-run
+      - name: monitor until close
+        if: ${{ github.event_name == 'schedule' || !inputs.once }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_THREAD_ID: ${{ secrets.DISCORD_THREAD_ID }}
+        run: python cloud/intraday_watch.py --extra watch_auto.json --env-dir cloud --log intraday_log.jsonl --poll 30
+      - name: commit log
+        if: ${{ github.event_name == 'schedule' || !inputs.once }}
+        run: |
+          git config user.name "intraday-watch[bot]"
+          git config user.email "intraday-watch@users.noreply.github.com"
+          git add intraday_log.jsonl
+          git diff --cached --quiet || git commit -m "log $(date +%F)"
+          git pull --rebase && git push

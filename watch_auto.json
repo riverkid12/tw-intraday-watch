@@ -1,0 +1,21 @@
+{
+ "built_from": "2026-10-15",
+ "items": [
+  {
+   "symbol": "2357",
+   "name": "華碩",
+   "level": 1010.0,
+   "stop": 964.0,
+   "avg_vol": 2137,
+   "otc": false
+  },
+  {
+   "symbol": "1815",
+   "name": "富喬",
+   "level": 140.0,
+   "stop": 128.5,
+   "avg_vol": 53535,
+   "otc": true
+  }
+ ]
+}
