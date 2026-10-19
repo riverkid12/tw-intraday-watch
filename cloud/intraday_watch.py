@@ -77,13 +77,14 @@ def projected_volume(cum_vol, t, profile=DEFAULT_PROFILE):
     return round(cum_vol / f)
 
 
-def evaluate(item, snap, min_ratio=1.35):
+def evaluate(item, snap, min_ratio=1.35, max_ratio=3.0):
     price, vol, t = snap.get("price"), snap.get("volume") or 0, snap.get("time") or "09:00:00"
     proj = projected_volume(vol, t)
     ratio = round(proj / item["avg_vol"], 2) if (proj and item.get("avg_vol")) else None
     return {"symbol": item["symbol"], "name": item.get("name", ""), "price": price, "level": item["level"],
             "above": bool(price is not None and price > item["level"]), "proj_vol": proj, "vol_ratio": ratio,
-            "vol_ok": bool(ratio is not None and ratio >= min_ratio),
+            "vol_ok": bool(ratio is not None and min_ratio <= ratio <= max_ratio),      # >3 倍 = 爆量過頭(4.1 不買)
+            "vol_over": bool(ratio is not None and ratio > max_ratio),
             "below_stop": bool(price is not None and item.get("stop") is not None and price <= item["stop"]), "time": t}
 
 
@@ -92,9 +93,11 @@ def _g(x):
 
 
 class Monitor:
-    def __init__(self, watchlist, poll, notify, log=None, pre_close="13:20:00", close="13:30:00", min_ratio=1.35, ready_ratio=1.25):
+    def __init__(self, watchlist, poll, notify, log=None, pre_close="13:20:00", close="13:30:00", min_ratio=1.35, ready_ratio=1.25,
+                 close_deadline="13:33:00", stop_after="13:40:00"):
         self.items, self.poll, self.notify, self.log = list(watchlist), poll, notify, (log or (lambda r: None))
         self.pre_close, self.close, self.min_ratio, self.ready_ratio = pre_close, close, min_ratio, ready_ratio
+        self.close_deadline, self.stop_after = close_deadline, stop_after
         self.above = {}            # symbol -> 上一次是否在線上(None = 還沒看過)
         self.stopped = set()
         self.pre_sent = self.done = False
@@ -139,16 +142,26 @@ class Monitor:
                 txt += ";量不足:" + "、".join(f"{e['symbol']} {e['name']} {_g(e['price'])} {e['vol_ratio']}x" for e in short)
             self._emit("pre_close", txt, time=now)
         if not self.done and now >= self.close:
+            missing = [e for e in states.values() if e["price"] is None]
+            if missing and now < self.close_deadline:
+                return                                   # 集合競價中,收盤價還沒公布:下一輪再看
             self.done = True
             parts = []
             for e in states.values():
-                if e["above"]:
-                    parts.append(f"{e['symbol']} {e['name']} 過關 {_g(e['price'])}(量 {e['vol_ratio']}x{'' if e['vol_ok'] else ',量不足'})")
+                if e["price"] is None:
+                    parts.append(f"{e['symbol']} {e['name']} 無報價")
+                elif e["above"]:
+                    note = "" if e["vol_ok"] else (",量 >3 倍爆量,4.1 不追" if e["vol_over"] else ",量不足")
+                    parts.append(f"{e['symbol']} {e['name']} 過關 {_g(e['price'])}(量 {e['vol_ratio']}x{note})")
                 else:
                     parts.append(f"{e['symbol']} {e['name']} 沒過 {_g(e['price'])}")
             self._emit("close", "13:30 收盤確認:" + ("; ".join(parts) or "無"), time=now)
 
-    def run(self, clock, sleep, poll_seconds=30, stop_after="13:35:00"):
+    def run(self, clock, sleep, poll_seconds=30, stop_after=None):
+        stop_after = stop_after or self.stop_after
+        if clock() >= stop_after:                        # 排程延遲到收盤後才開始:不發任何訊息
+            self.done = True
+            return
         while not self.done:
             now = clock()
             self.step(now)
