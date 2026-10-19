@@ -159,15 +159,16 @@ class Monitor:
 
     def run(self, clock, sleep, poll_seconds=30, stop_after=None):
         stop_after = stop_after or self.stop_after
-        if clock() >= stop_after:                        # 排程延遲到收盤後才開始:不發任何訊息
+        now = clock()
+        if now >= stop_after:                            # 排程延遲到收盤後才開始:不發任何訊息
             self.done = True
             return
         while not self.done:
-            now = clock()
             self.step(now)
             if self.done or now >= stop_after:
                 break
             sleep(poll_seconds)
+            now = clock()
 
 
 def load_watchlist(path, date, lot=1000, extra=()):
