@@ -1,20 +1,12 @@
 {
- "built_from": "2026-10-19",
+ "built_from": "2026-10-20",
  "items": [
-  {
-   "symbol": "2379",
-   "name": "瑞昱",
-   "level": 794.0,
-   "stop": 711.0,
-   "avg_vol": 2567,
-   "otc": false
-  },
   {
    "symbol": "2357",
    "name": "華碩",
    "level": 1010.0,
-   "stop": 964.0,
-   "avg_vol": 2141,
+   "stop": 942.0,
+   "avg_vol": 2152,
    "otc": false
   },
   {
