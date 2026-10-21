@@ -5,3 +5,7 @@
 {"event": "cross", "text": "1815 富喬 過 140:152,量推估 3.93x", "symbol": "1815", "price": 152.0, "vol_ratio": 3.93, "time": "12:41:30", "date": "2026-10-20"}
 {"event": "pre_close", "text": "13:20 準備過關:無", "time": "13:20:27", "date": "2026-10-20"}
 {"event": "close", "text": "13:30 收盤確認:2379 瑞昱 沒過 774; 2357 華碩 沒過 981; 2353 宏碁 沒過 32.4; 1815 富喬 過關 154(量 3.51x,量 >3 倍爆量,4.1 不追)", "time": "13:32:25", "date": "2026-10-20"}
+{"event": "cross", "text": "1815 富喬 過 140:146,量推估 2.92x", "symbol": "1815", "price": 146.0, "vol_ratio": 2.92, "time": "12:40:22", "date": "2026-10-21"}
+{"event": "pre_close", "text": "13:20 準備過關:無", "time": "13:20:11", "date": "2026-10-21"}
+{"event": "poll_error", "time": "13:30:11", "error": "ConnectTimeout(MaxRetryError(\"HTTPSConnectionPool(host='mis.twse.com.tw', port=443): Max retries exceeded with url: /stock/api/getStockInfo.jsp?ex_ch=tse_2357.tw%7Ctse_2353.tw%7Cotc_1815.tw&json=1&del", "date": "2026-10-21"}
+{"event": "close", "text": "13:30 收盤確認:2357 華碩 沒過 982; 2353 宏碁 沒過 32.3; 1815 富喬 過關 147(量 2.59x)", "time": "13:30:56", "date": "2026-10-21"}
