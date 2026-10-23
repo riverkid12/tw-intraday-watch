@@ -94,10 +94,10 @@ def _g(x):
 
 class Monitor:
     def __init__(self, watchlist, poll, notify, log=None, pre_close="13:20:00", close="13:30:00", min_ratio=1.35, ready_ratio=1.25,
-                 close_deadline="13:33:00", stop_after="13:40:00"):
+                 close_deadline="13:33:00", stop_after="13:40:00", today=None):
         self.items, self.poll, self.notify, self.log = list(watchlist), poll, notify, (log or (lambda r: None))
         self.pre_close, self.close, self.min_ratio, self.ready_ratio = pre_close, close, min_ratio, ready_ratio
-        self.close_deadline, self.stop_after = close_deadline, stop_after
+        self.close_deadline, self.stop_after, self.today = close_deadline, stop_after, today   # today = "YYYYMMDD",給了才檢查休市
         self.above = {}            # symbol -> 上一次是否在線上(None = 還沒看過)
         self.stopped = set()
         self.pre_sent = self.done = False
@@ -112,6 +112,11 @@ class Monitor:
             snaps = self.poll()
         except Exception as e:                                   # 網路壞了:記一筆、下一輪再試
             self.log({"event": "poll_error", "time": now, "error": repr(e)[:200]})
+            return
+        dates = {str(v.get("date")) for v in snaps.values() if v.get("date")}
+        if self.today and dates and self.today not in dates:          # 快照全是別天的 → 今天休市,不要拿昨天的收盤價發訊號
+            self.log({"event": "holiday", "time": now, "snapshot_date": sorted(dates)[-1]})
+            self.done = True
             return
         states = {}
         for it in self.items:
@@ -248,7 +253,7 @@ if __name__ == "__main__":
             with open(a.log, "a", encoding="utf-8") as f:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
-    m = Monitor(wl, poll=lambda: fetch_mis(syms, otc), notify=notify, log=log)
+    m = Monitor(wl, poll=lambda: fetch_mis(syms, otc), notify=notify, log=log, today=_taipei_now().strftime("%Y%m%d"))
     if a.once:
         m.step(_taipei_now().strftime("%H:%M:%S")); print("last:", json.dumps(m.last, ensure_ascii=False)[:600])
     else:
