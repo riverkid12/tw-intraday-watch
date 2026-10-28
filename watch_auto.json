@@ -1,20 +1,12 @@
 {
- "built_from": "2026-10-27",
+ "built_from": "2026-10-28",
  "items": [
   {
    "symbol": "2379",
    "name": "瑞昱",
    "level": 805.0,
    "stop": 715.0,
-   "avg_vol": 2606,
-   "otc": false
-  },
-  {
-   "symbol": "2520",
-   "name": "冠德",
-   "level": 38.5,
-   "stop": 36.4,
-   "avg_vol": 1104,
+   "avg_vol": 2467,
    "otc": false
   },
   {
