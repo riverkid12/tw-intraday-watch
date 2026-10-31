@@ -204,6 +204,31 @@ def load_extra(path):
     return d.get("items", []) if isinstance(d, dict) else d
 
 
+def drop_stopped(items, log_path, today, days=14):
+    """手寫名單的自動退出:近 days 天 intraday_log 有該檔「跌破失效線」事件、且事件價 < 名單上現在的 stop → 剔除。
+    使用者把 stop 改到事件價以下就視為新條件、自動回來。回 (kept, dropped=[(symbol, name, date, price)])。"""
+    if not log_path or not os.path.exists(log_path):
+        return list(items), []
+    since = (datetime.date.fromisoformat(today) - datetime.timedelta(days=days)).isoformat()
+    low = {}                                                     # symbol -> (最低事件價, 日期)
+    for line in open(log_path, encoding="utf-8"):
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if r.get("event") == "stop" and r.get("date", "") >= since and r.get("price") is not None:
+            if r["symbol"] not in low or r["price"] < low[r["symbol"]][0]:
+                low[r["symbol"]] = (r["price"], r["date"])
+    kept, dropped = [], []
+    for x in items:
+        hit = low.get(x["symbol"])
+        if hit and x.get("stop") is not None and hit[0] < x["stop"]:
+            dropped.append((x["symbol"], x.get("name") or "", hit[1], hit[0]))
+        else:
+            kept.append(x)
+    return kept, dropped
+
+
 def _taipei_now():
     try:
         from zoneinfo import ZoneInfo

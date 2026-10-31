@@ -11,13 +11,16 @@ for f in ("intraday_watch.py", "notify_discord.py"):
     shutil.copy(os.path.join(SHARED, f), os.path.join(CLOUD, f))
 
 sys.path.insert(0, SHARED)
-from intraday_watch import load_watchlist  # noqa: E402
+from intraday_watch import load_watchlist, drop_stopped  # noqa: E402
 
 setups = os.path.join(TW, "setups_history.jsonl")
 dates = sorted({json.loads(l)["date"] for l in open(setups, encoding="utf-8") if l.strip()}) if os.path.exists(setups) else []
 date = dates[-1] if dates else None
 extra_path = os.path.join(TW, "watchlist.json")
 extra = json.load(open(extra_path, encoding="utf-8")) if os.path.exists(extra_path) else []
+extra, dropped = drop_stopped(extra, os.path.join(HERE, "intraday_log.jsonl"), today=__import__("datetime").date.today().isoformat())
+for sym, name, d, px in dropped:
+    print(f"watchlist.json 略過 {sym} {name}:{d} 已跌破失效線({px:g}),要重新監看請把 stop 改到 {px:g} 以下")
 wl = load_watchlist(setups, date, lot=1000, extra=extra)
 otc = {x["symbol"] for x in extra if x.get("otc")}
 for w in wl:

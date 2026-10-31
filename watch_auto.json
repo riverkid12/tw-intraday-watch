@@ -8,30 +8,6 @@
    "stop": 41.4,
    "avg_vol": 15230,
    "otc": false
-  },
-  {
-   "symbol": "2357",
-   "name": "華碩",
-   "level": 1010.0,
-   "stop": 964.0,
-   "avg_vol": 2141,
-   "otc": false
-  },
-  {
-   "symbol": "2353",
-   "name": "宏碁",
-   "level": 32.8,
-   "stop": 30.8,
-   "avg_vol": 13179,
-   "otc": false
-  },
-  {
-   "symbol": "1815",
-   "name": "富喬",
-   "level": 140.0,
-   "stop": 128.5,
-   "avg_vol": 53535,
-   "otc": true
   }
  ]
 }
